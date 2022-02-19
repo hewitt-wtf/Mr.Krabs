@@ -1,10 +1,10 @@
-const {CustomEmbed} = require("#structures");
-const {formatString} = require("#utils")
+const { CustomEmbed, Paginate } = require("#structures");
+const { formatString } = require("#utils")
 
 module.exports = {
     name: "combos",
     description: "Possible Combos in poker",
-    execute: ({bot, message, send}) => {
+    execute: ({ bot, message, send }) => {
         message.delete()
         let embed = new CustomEmbed()
             .setAuthor({
@@ -20,7 +20,7 @@ module.exports = {
                     name: 'Card Suits:',
                     value: 'four suits: Clubs, Spades, Hearts, Diamonds:\n<:1clubs:942566716922298439><:1spades:942888350552064100><:1hearts:942892101413269547><:1diamonds:942892184871534653>'
                 },
-                {name: 'High Card:', value: 'Highest Card in Hand\n <:1clubs:942566716922298439>'},
+                { name: 'High Card:', value: 'Highest Card in Hand\n <:1clubs:942566716922298439>' },
                 {
                     name: 'Royal Flush:',
                     value: 'Highest Combo in poker, stemming from Having a straight flush from 10-Ace of one suit\n<:10clubs:942894134891540552><:11clubs:942894187987234847><:12clubs:942894255041552444><:13clubs:942894297496293376><:1clubs:942566716922298439>'
@@ -61,8 +61,9 @@ module.exports = {
                     value: '1 pair of 2 cards with the same value, In case of tie, pair, then then left over cards.\n<:13clubs:942894297496293376><:13diamonds:942894394770620497>'
                 },
             )
-        message.channel.send({
-            embeds: [embed, embed2]
-        })
+
+        new Paginate(message, [embed, embed2], message.member)
+
+
     }
 }

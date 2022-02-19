@@ -1,5 +1,6 @@
 module.exports = {
     KrabsClient: require("./CustomClient"),
     CustomEmbed: require("./CustomEmbed"),
-    DB: require("./DB")
+    DB: require("./DB"),
+    Paginate: require("./Paginate"),
 }

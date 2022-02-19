@@ -49,4 +49,14 @@ const log = (content, type) => {
     console.log(text)
 }
 
-module.exports = { getFiles, formatString, log }
+const chunk = (array, amount = 5) => {
+    const chunked = [];
+    let index = 0;
+    while (index < array.length) {
+        chunked.push(array.slice(index, index + amount));
+        index += amount;
+    }
+    return chunked;
+}
+
+module.exports = { getFiles, formatString, log, chunk }

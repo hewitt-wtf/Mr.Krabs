@@ -3,6 +3,8 @@
 	https://github.com/HK-Yeet/SomeBot/blob/main/src/structures/ButtonPaginate.ts
 */
 
+const { MessageButton, MessageActionRow } = require("discord.js");
+
 class Paginate {
     constructor(
         message,
@@ -20,11 +22,7 @@ class Paginate {
 
     async createCollector() {
         let { message, embeds, member } = this;
-        if (!interaction.deferred) await interaction.deferReply();
-        const collector = interaction.channel.createMessageComponentCollector({
-            idle: 1000 * 30,
-            dispose: true,
-        });
+
         let buttons = [
             new MessageButton()
                 .setCustomId("left")
@@ -36,17 +34,22 @@ class Paginate {
                 .setLabel("❯")
                 .setStyle("PRIMARY"),
         ];
-        await interaction.editReply({
-            embeds: [embeds[0].setFooter(`Page 1/${embeds.length}`)],
+        let msg = await message.channel.send({
+            embeds: [embeds[0].setFooter({
+                text: `Page 1/${embeds.length}`
+            })],
             components: [new MessageActionRow().addComponents(buttons)],
         });
-
+        const collector = msg.createMessageComponentCollector({
+            idle: 1000 * 30,
+            dispose: true,
+            componentType: "BUTTON"
+        });
         let page = 0;
         let maxPages = embeds.length;
 
         collector.on("collect", async (i) => {
-            if (i.message.id != (await interaction.fetchReply()).id) return;
-            if (i.user.id != member.id) {
+            if (message.author.id != member.id) {
                 i.reply({
                     content: `This is locked to ${member.displayName}`,
                     ephemeral: true,
@@ -67,7 +70,9 @@ class Paginate {
                     });
                 }
                 i.update({
-                    embeds: [embeds[page].setFooter(`Page ${page + 1}/${embeds.length}`)],
+                    embeds: [embeds[page].setFooter({
+                        text: `Page ${page + 1}/${embeds.length}`
+                    })],
                     components: [new MessageActionRow().addComponents(buttons)],
                 });
             } else if (i.customId == "left") {
@@ -85,14 +90,16 @@ class Paginate {
                 }
 
                 i.update({
-                    embeds: [embeds[page].setFooter(`Page ${page + 1}/${embeds.length}`)],
+                    embeds: [embeds[page].setFooter({
+                        text: `Page ${page + 1}/${embeds.length}`
+                    })],
                     components: [new MessageActionRow().addComponents(buttons)],
                 });
             }
         });
 
         collector.on("end", async () => {
-            await interaction.editReply({
+            await msg.edit({
                 components: [
                     new MessageActionRow().addComponents(
                         buttons.map((b) => b.setStyle("SECONDARY").setDisabled(true))
@@ -103,4 +110,4 @@ class Paginate {
     }
 }
 
-export default ButtonPaginate;
+module.exports = Paginate;
