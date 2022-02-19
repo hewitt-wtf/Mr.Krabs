@@ -1,0 +1,41 @@
+{
+  "name": "mr.krabs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HK-Yeet/Mr.Krabs.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HK-Yeet/Mr.Krabs/issues"
+  },
+  "homepage": "https://github.com/HK-Yeet/Mr.Krabs#readme",
+  "dependencies": {
+    "chalk": "^4.0.0",
+    "cron": "^1.8.2",
+    "discord.js": "^13.6.0",
+    "dotenv": "^16.0.0",
+    "ejs": "^3.1.6",
+    "express": "^4.17.2",
+    "get-image-colors": "^4.0.1",
+    "module-alias": "^2.2.2",
+    "mongoose": "^6.2.1",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "node": "^16.13.2"
+  },
+  "_moduleAliases": {
+    "#root": ".",
+    "#structures": "./structures/index",
+    "#utils": "./utils/index",
+    "#schemas": "./schemas"
+  }
+}
