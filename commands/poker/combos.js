@@ -3,6 +3,7 @@ const { formatString } = require("#utils")
 
 module.exports = {
     name: "combos",
+    aliases: ['com'],
     description: "Possible Combos in poker",
     execute: ({ bot, message, send }) => {
         message.delete()

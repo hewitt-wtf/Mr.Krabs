@@ -3,6 +3,7 @@ const {formatString} = require("#utils")
 
 module.exports = {
     name: "howtoplay",
+    aliases: ['htp'],
     description: "Playing Guide",
     execute: ({bot, message, send}) => {
         message.delete()

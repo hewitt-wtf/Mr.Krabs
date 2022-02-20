@@ -1,8 +1,8 @@
 //https://discord.js.org/#/docs/discord.js/stable
 
-require('module-alias/register')
+require('module-alias/register');
 
-const Express = require("express")
+const Express = require("express");
 const path = require("path");
 const settings = require("./config.json");
 const { KrabsClient } = require("#structures");

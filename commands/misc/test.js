@@ -2,6 +2,7 @@ const { CustomEmbed } = require("#structures")
 const { MessageButton, MessageActionRow } = require("discord.js")
 module.exports = {
     name: "test",
+    aliases: ['t'],
     execute: ({ bot, message, send }) => {
         message.delete()
         let embed = new CustomEmbed()

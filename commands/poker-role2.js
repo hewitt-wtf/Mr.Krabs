@@ -2,7 +2,7 @@ const { CustomEmbed } = require("#structures")
 const { MessageButton, MessageActionRow } = require("discord.js")
 module.exports = {
     name: "poker-role",
-    aliases: ["pr"],
+    aliases: ["pr", 'prole'],
     description: "Send message to get poker role",
     execute: ({ bot, message }) => {
         message.delete()
