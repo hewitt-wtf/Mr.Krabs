@@ -34,9 +34,9 @@ const formatString = (string) => {
 
 const log = (content, type) => {
     let text = ""
-    switch (type) {
+    switch (type.toLowerCase()) {
         case "ready":
-            text += chalk.yellow(`[${type.toUpperCase()}]`)
+            text += chalk.magenta(`[${type.toUpperCase()}]`)
             break
         case "error":
             text += chalk.red(`[${type.toUpperCase()}]`)

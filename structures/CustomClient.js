@@ -23,6 +23,7 @@ class KrabsClient extends Client {
         const files = getFiles(dir)
         for (const file of files) {
             let command = require(file);
+			if(command.minArgs && !command.usage) throw new Error(`Add command usage to ${command.name}`)
             this.commands.set(command.name, command)
         }
         log(`Loaded ${this.commands.size} commands`, "info")

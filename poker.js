@@ -1,3 +1,5 @@
+; const { CustomEmbed } = require("#structures")
+const { MessageButton, MessageActionRow } = require("discord.js")
 let allGames = [];
 
 function arraySort(array) {
@@ -15,7 +17,7 @@ class Card {
   constructor(value, suit) {
     this.num = value;
     this.suit = suit;
-    this.img = 'images/cards/' + this.num + this.suit.charAt(1) + '.png';
+    this.img = 'Cards/' + this.num + this.suit.charAt(1) + '.png';
     let allNames = [
       "2",
       "3",
@@ -36,15 +38,15 @@ class Card {
 }
 
 class Player {
-  constructor(chips) {
+  constructor(chips, id) {
     this.hand = [];
     this.bank = chips;
-    this.position;
-    this.userId;
+    this.id = id;
     this.combos;
+    this.inPot = 0;
   }
 
-  deal(cards) {
+  deal(cards, deck) {
     for (let i = 0; i < cards; i++) {
       this.hand.push(deck[i]);
       deck.splice(i, 1);
@@ -98,73 +100,288 @@ class Player {
 }
 
 class Game {
-  constructor(numPlayers, startingChips, increments) {
-    this.players = [];
-    for (let i = 0; i < numPlayers; i++) {
-      this.players.push(new Player(startingChips));
-    }
-    this.subrounds;
-    this.draws;
+  constructor(startingChips, increments, channel, players, friendly = false) {
+    this.players = players.map((p, i) => new Player(startingChips, p));
+    this.channel = channel;
     this.baseChips = startingChips;
-    this.baseSB = ceil(this.baseChips / 2000) * 10;
+    this.baseSB = Math.ceil(this.baseChips / 2000) * 10;
     this.increments = increments;
     this.timePassed;
+    this.pos = 0;
+    setInterval(() => {
+      this.sb *= 2;
+    }, increments * 60 * 1000)
+    this.startEmbed = new CustomEmbed()
+      .setTitle("New Game!")
+      .setDescription("Total Chips per player: " + this.baseChips + "\nTime Increments: " + this.increments + " minutes\nfirst dealer is <@!" + this.players[0].id + ">")
+    this.channel.send({
+      embeds: [this.startEmbed]
+    })
+    console.log("sus")
+
+    this.roundRun();
+
   }
 
-  roundSetup(subrounds, draws, playAmount) {
-    this.subrounds = subrounds;
-    this.draws = draws;
-    this.playAmount = blindCalc(
-      this.basePlayAmount,
-      this.increments,
-      this.timePassed
-    );
-  }
+  async roundRun() {
+    let embed1 = new CustomEmbed()
+      .setDescription("Dealer is <@!" + this.players[this.pos].id + ">\nDealer choose how many rounds of draws and how many draws per round")
+      .setFooter("Rounds of draws:")
+    let button2 = new MessageButton()
+      .setCustomId(`1r`)
+      .setLabel("1")
+      .setStyle("SUCCESS");
+    let button3 = new MessageButton()
+      .setCustomId(`2r`)
+      .setLabel("2")
+      .setStyle("SUCCESS");
+    let button1 = new MessageButton()
+      .setCustomId(`0r`)
+      .setLabel("0")
+      .setStyle("DANGER");
 
-  roundRun() {
+    let filter = i => i.user.id === this.players[this.pos].id;
+
+    let drawMsg = await this.channel.send({
+      embeds: [embed1], components: [
+        new MessageActionRow().setComponents([button1, button2, button3]),
+      ],
+    })
+
+    let i = await drawMsg.awaitMessageComponent({ filter, time: 60000, max: 1 });
+    let draw = i.customId.charAt(0)
+
+    let embed2 = new CustomEmbed()
+      .setFooter("Draws per round:")
+    let button4 = new MessageButton()
+      .setCustomId(`1d`)
+      .setLabel("1")
+      .setStyle("SUCCESS")
+    let button5 = new MessageButton()
+      .setCustomId('2d')
+      .setLabel('2')
+      .setStyle('SUCCESS')
     let round = new Round(
       this.players,
       this.subrounds,
       this.draws,
-      this.playAmount,
-      this.dealer
+      this.sb,
+      this.pos,
+      this.channel
     );
-    this.round.winFind(this.players);
+    // round.winFind(this.players.hand);
+
+
+
+
+    if (this.pos < this.players.length - 1) this.pos++;
+    else { this.pos = 0; }
   }
 }
 
 class Round {
-  constructor(players, subrounds, draws, playAmount, dealer) {
-    this.dealer;
-    this.sb;
-    this.bb;
-    this.playAmount = playAmount;
-    this.deck = [];
-    new Deck(this.deck);
+  constructor(players, subrounds, draws, sb, dealer, channel) {
+    this.players = players;
+    this.channel = channel;
+    this.dealer = dealer;
+    this.sb = sb;
+    this.minb = sb * 2;
+    this.deck = new Deck();
+    this.pot = sb * 3;
+
+    if (this.players.length > dealer + 2) {
+      this.player[this.dealer+1].inPot = this.sb;
+      this.player[this.dealer+1].bank -= this.sb;
+      this.player[this.dealer+2].inPot = this.sb*2;
+      this.player[this.dealer+2].bank -= this.sb*2;
+    }
+    else if(this.players.length>dealer+1){
+      this.player[this.dealer+1].inPot = this.sb;
+      this.player[this.dealer+1].bank -= this.sb;
+      this.player[0].inPot = this.sb*2;
+      this.player[0].bank -= this.sb*2;
+    }
+    else{
+      this.player[0].inPot = this.sb;
+      this.player[0].bank -= this.sb;
+      this.player[1].inPot = this.sb*2;
+      this.player[1].bank -= this.sb*2;
+    }
+
     for (let i = 0; i < 2; i++) {
       this.deck.shuffleDeck();
     }
-    for (let i = 0; i < players.length; i++) {
-      players[i].hand = [];
-      players[i].deal(5);
+    for (let i = 0; i < this.players.length; i++) {
+      this.players[i].hand = [];
+      this.players[i].deal(5, this.deck.deck);
+      this.player[i].inPot = 0;
     }
-    this.draws = draws;
-    this.subrounds = subrounds;
-    this.pot;
+    let checkhand = new CustomEmbed()
+      .setDescription("Use /hand to check your hand at any time")
+    let i1 = 0;
+    let j1 = this.dealer + 3;
+    if (j1 >= this.players.length) j1 = 0 + j1 - this.players.length;
+    let p;
+    let l = this.players.length
+    while (i1 < l) {
+      p = this.players[j1];
+      let filter = i => i.user.id === this.players[this.pos].id;
+      let embed = new CustomEmbed()
+        .setDescription("Press button to do shit")
+      let buttons = [
+        new MessageButton()
+          .setLabel("Fold")
+          .setCustomId("dude-fold")
+          .setStyle("DANGER"),
+        new MessageButton()
+          .setLabel("Call")
+          .setCustomId("dude-call")
+          .setStyle("DANGER"),
+        new MessageButton()
+          .setLabel("Raise")
+          .setCustomId("dude-raise")
+          .setStyle("DANGER")
+      ];
+      this.channel.send({
+        embeds: [embed],
+        components: [new MessageActionRow().setComponents(buttons)]
+      }).then(async (msg) => {
+        let interaction = await msg.awaitMessageComponent({ filter, time: 10 * 1000 });
+        let option = interaction.customId.split("-")[1];
+
+        switch (option) {
+          case "fold":
+            this.players.splice(j1, 1);
+            if (j1 === this.players.length) {
+              j1 = 0;
+            }
+            if (j1 <= this.dealer) {
+              this.dealer--;
+              if (this.dealer === -1) {
+                this.dealer = this.players.length - 1;
+              }
+            }
+            else if (j1 < this.players.length - 1) {
+              j1++;
+            }
+            else {
+              j1 = 0;
+            }
+            i1++;
+            break;
+          case "call":
+            if (p.bank >= this.minb) {
+              this.pot += this.minb - p.inPot;
+              p.bank -= this.minb - p.inPot;
+              p.inPot += this.minb - p.inPot;
+            }
+            else{
+              
+            }
+            break
+          case "raise":
+            break;
+        }
+
+      })
+      this.draws = draws;
+      this.subrounds = subrounds;
+      for (let i = 0; i < this.subrounds; i++) {
+        if (this.players.length < 2) i = this.subrounds;
+        this.subroundRun();
+      }
+      this.winners = this.winFind()
+      this.payout = this.pot / this.winners.length;
+      for (let i = 0; i < this.winners.length; i++) {
+        this.winners[i].bank += payout;
+      }
+
+
+    }
+
   }
 
-  subRoundRun() {
+  async subRoundRun() {
+    let p;
+    let i2 = 0;
+    let j2 = this.dealer + 1;
+    if (j1 === this.players.length) j1 = 0;
+    while (i2 < this.players.length) {
+      p = this.players[j2];
+      //use input in trade hands funcion of player
+      //sort hand array
+      //send embed with buttons to trade specific cards
+      if (j2 < this.players.length - 1) {
+        j2++;
+      }
+      else {
+        j2 = 0;
+      }
+      i2++;
+    }
+    i2 = 0;
+    j2 = 0
+    let subl = this.players.length;
+    while (i2 < subl) {
+      p = this.players[j2];
+
+      let embed = new CustomEmbed()
+        .setDescription("Do something")
+      let buttons = [
+        new MessageButton()
+          .setLabel("Fold")
+          .setCustomId("dude-fold")
+          .setStyle("DANGER"),
+        new MessageButton()
+          .setLabel("Call")
+          .setCustomId("dude-call")
+          .setStyle("DANGER"),
+        new MessageButton()
+          .setLabel("Raise")
+          .setCustomId("dude-raise")
+          .setStyle("DANGER")
+      ];
+
+      let msg = await this.channel.send({
+        embeds: [embed],
+        components: [newMessageActionRow().setComponents(buttons)]
+      })
+      let filter = i => i.user.id === this.players[this.pos].id;
+
+      let interaction = await msgawaitMessageComponent({ filter, time: 10 * 1000 })
+      let option = interaction.customId.split("-")[1]
+
+      switch (option) {
+        case "fold":
+          break
+        case "call":
+          break;
+        case "raise":
+          break;
+      }
+
+      //send embed with buttons that give input, fold, call
+      //if folded, do not increase j1 unless = this.players.length
+      if (j2 < this.players.length - 1) {
+        j2++;
+      }
+      else {
+        j2 = 0;
+      }
+      if (this.players.length < 2) return;
+      i2++;
+    }
   }
 
-  winFind(hands) {
-    let allTied = [hands[0]];
+  winFind() {
+    let allTied = [this.players[0]];
     let highest = allTied[0].combos.type;
-    for (let i = 1; i < hands.length; i++) {
+    for (let i = 1; i < this.players.length; i++) {
       highest = allTied[0].combos.type;
-      if (hands[i].combos.type < highest) {
-        allTied = [hands[i]];
-      } else if (hands[i].combos.type === highest) {
-        allTied.push(hands[i]);
+      if (this.players[i].combos.type < highest) {
+        allTied = [this.players[i]];
+      } else if (this.players[i].combos.type === highest) {
+        allTied.push(this.players[i]);
       }
     }
     if (allTied.length === 1 || allTied[0].combos.type === 0) {
@@ -322,8 +539,8 @@ class Round {
 }
 
 class Deck {
-  constructor(deck) {
-    this.deck = deck
+  constructor() {
+    this.deck = [];
     let suits = ["Hearts", "Diamonds", "Clubs", "Spades"];
     for (let i = 0; i < 4; i++) {
       for (let j = 2; j < 15; j++) {
@@ -339,7 +556,7 @@ class Deck {
       this.deck[i] = this.deck[j];
       this.deck[j] = temp;
     }
-  };
+  }
 }
 
 class SubRound {
@@ -348,7 +565,6 @@ class SubRound {
     this.players = players;
   }
 }
-
 
 class Highest {
   constructor(type, highCard, combo1, combo2) {
@@ -484,3 +700,5 @@ class Checker {
     return returner;
   }
 }
+
+module.exports = { allGames, Card, Player, Game, SubRound, Highest, Checker }

@@ -7,27 +7,24 @@ const path = require("path");
 const settings = require("./config.json");
 const { KrabsClient } = require("#structures");
 const { log } = require("#utils");
-
 const bot = new KrabsClient(settings);
 
 bot.loadCommands(path.join(__dirname, "commands"))
 bot.loadEvents(path.join(__dirname, "events"))
 bot.login()
 
-process.on("uncaughtException", (e) => {
-    console.log(e.message)
-})
+// process.on("uncaughtException", (e, o) => log(`${e} ${o}`, "error"))
 
 bot.on("ready", () => {
 
-    const app = Express();
+	const app = Express();
 
-    app.set("view engine", "ejs");
+	app.set("view engine", "ejs");
 
-    app.get("/", async (req, res) => {
-        res.status(200).render("landing-page", { bot });
-    });
+	app.get("/", async (_, res) => {
+		res.status(200).render("landing-page", { bot });
+	});
 
-    app.listen(443);
+	app.listen(443)
 
 })
