@@ -5,24 +5,25 @@ module.exports = {
 	name: "hand",
 	description: "Show current hand",
 	slash: true,
-	execute:async  ({ bot, interaction, send }) => {
-		let egg = allGames.some((g) => g.channel.id === interaction.channel.id)
+	execute: async ({ bot, interaction, send }) => {
+		let egg = allGames.find((g) => g.channel.id === interaction.channel.id)
+    console.log("sussy")
 		if (!egg) {
 			send("No poker game currently on", true)
-			return;
+		} else {
+			await interaction.deferReply()
+			let player = egg.players.find((i) => i.id === interaction.user.id)
+			if (player) {
+				let embed = new CustomEmbed()
+					.setTitle("Your Cards")
+					.setDescription(hand.map((c) => c.name).join(", "))
+				let img = await mergeImg(hand.map((c) => path.join(process.cwd(), c.img)))
+				interaction.editReply({
+					embeds: [embed]
+				})
+			} else {
+				interaction.editReply({ content: "No game?" })
+			}
 		}
-		let player = allGames.find((g) => g.players.includes(interaction.user.id))
-		if (player) {
-			let playerHand = allGames[player].players.find((v) => v == interaction.user.id)
-			let hand = allGames[player][playerHand]
-			let embed = new CustomEmbed()
-				.setTitle("Your Cards")
-				.setDescription(hand.map((c) => c.name).join(", "))
-			let img = await mergeImg(hand.map((c) => path.join(process.cwd(), c.img)))
-			interaction.reply({
-				embeds: [embed]
-			})
-		}
-
 	}
 }

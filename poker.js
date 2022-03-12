@@ -121,12 +121,17 @@ class Game {
 
     this.roundRun();
 
+
   }
 
   async roundRun() {
     let embed1 = new CustomEmbed()
       .setDescription("Dealer is <@!" + this.players[this.pos].id + ">\nDealer choose how many rounds of draws and how many draws per round")
-      .setFooter("Rounds of draws:")
+      .setFooter({ text: "Rounds of draws:" })
+    let button1 = new MessageButton()
+      .setCustomId(`zero`)
+      .setLabel("0")
+      .setStyle("DANGER");
     let button2 = new MessageButton()
       .setCustomId(`1r`)
       .setLabel("1")
@@ -135,10 +140,7 @@ class Game {
       .setCustomId(`2r`)
       .setLabel("2")
       .setStyle("SUCCESS");
-    let button1 = new MessageButton()
-      .setCustomId(`0r`)
-      .setLabel("0")
-      .setStyle("DANGER");
+
 
     let filter = i => i.user.id === this.players[this.pos].id;
 
@@ -148,11 +150,16 @@ class Game {
       ],
     })
 
-    let i = await drawMsg.awaitMessageComponent({ filter, time: 60000, max: 1 });
-    let draw = i.customId.charAt(0)
-
+    let i = await drawMsg.awaitMessageComponent({ filter, time: 60000 });
+    console.log(i.customId)
+    let draw = i.customId == "zero" ? 0 : Number(i.customId.charAt(0))
+    await i.reply({
+      content: `You selected: \`${draw}\``,
+      ephemeral: true
+    })
+    this.subrounds = draw;
     let embed2 = new CustomEmbed()
-      .setFooter("Draws per round:")
+      .setFooter({ text: "Draws per round:" })
     let button4 = new MessageButton()
       .setCustomId(`1d`)
       .setLabel("1")
@@ -161,6 +168,27 @@ class Game {
       .setCustomId('2d')
       .setLabel('2')
       .setStyle('SUCCESS')
+    if (this.subrounds !== 0) {
+      let filter2 = i => i.user.id === this.players[this.pos].id;
+
+      let drawMsg2 = await this.channel.send({
+        embeds: [embed2], components: [
+          new MessageActionRow().setComponents([button4, button5]),
+        ],
+      })
+
+      let i2 = await drawMsg2.awaitMessageComponent({ filter: filter2, time: 60000 });
+      let draw2 = i2.customId.charAt(0)
+      console.log(draw2)
+      await i2.reply({
+        content: `You selected: \`${draw2}\``,
+        ephemeral: true
+      })
+      this.draws = Number(draw2);
+    }
+    else {
+      this.draws = 0;
+    }
     let round = new Round(
       this.players,
       this.subrounds,
@@ -181,123 +209,132 @@ class Game {
 
 class Round {
   constructor(players, subrounds, draws, sb, dealer, channel) {
-    this.players = players;
-    this.channel = channel;
-    this.dealer = dealer;
-    this.sb = sb;
-    this.minb = sb * 2;
-    this.deck = new Deck();
-    this.pot = sb * 3;
 
-    if (this.players.length > dealer + 2) {
-      this.player[this.dealer+1].inPot = this.sb;
-      this.player[this.dealer+1].bank -= this.sb;
-      this.player[this.dealer+2].inPot = this.sb*2;
-      this.player[this.dealer+2].bank -= this.sb*2;
-    }
-    else if(this.players.length>dealer+1){
-      this.player[this.dealer+1].inPot = this.sb;
-      this.player[this.dealer+1].bank -= this.sb;
-      this.player[0].inPot = this.sb*2;
-      this.player[0].bank -= this.sb*2;
-    }
-    else{
-      this.player[0].inPot = this.sb;
-      this.player[0].bank -= this.sb;
-      this.player[1].inPot = this.sb*2;
-      this.player[1].bank -= this.sb*2;
-    }
-
-    for (let i = 0; i < 2; i++) {
+    (async () => {
+      this.players = players;
+      this.channel = channel;
+      this.dealer = dealer;
+      this.sb = sb;
+      this.minb = sb * 2;
+      this.deck = new Deck();
+      this.pot = sb * 3;
+      for (let i = 0; i < this.players.length; i++) {
+        this.players[i].inPot = 0;
+      }
+      if (this.players.length > this.dealer + 2) {
+        this.players[this.dealer + 1].inPot = this.sb;
+        this.players[this.dealer + 1].bank -= this.sb;
+        this.players[this.dealer + 2].inPot = this.sb * 2;
+        this.players[this.dealer + 2].bank -= this.sb * 2;
+      }
+      else if (this.players.length > this.dealer + 1) {
+        this.players[this.dealer + 1].inPot = this.sb;
+        this.players[this.dealer + 1].bank -= this.sb;
+        this.players[0].inPot = this.sb * 2;
+        this.players[0].bank -= this.sb * 2;
+      }
+      else {
+        this.players[0].inPot = this.sb;
+        this.players[0].bank -= this.sb;
+        this.players[1].inPot = this.sb * 2;
+        this.players[1].bank -= this.sb * 2;
+      }
       this.deck.shuffleDeck();
-    }
-    for (let i = 0; i < this.players.length; i++) {
-      this.players[i].hand = [];
-      this.players[i].deal(5, this.deck.deck);
-      this.player[i].inPot = 0;
-    }
-    let checkhand = new CustomEmbed()
-      .setDescription("Use /hand to check your hand at any time")
-    let i1 = 0;
-    let j1 = this.dealer + 3;
-    if (j1 >= this.players.length) j1 = 0 + j1 - this.players.length;
-    let p;
-    let l = this.players.length
-    while (i1 < l) {
-      p = this.players[j1];
-      let filter = i => i.user.id === this.players[this.pos].id;
-      let embed = new CustomEmbed()
-        .setDescription("Press button to do shit")
-      let buttons = [
-        new MessageButton()
-          .setLabel("Fold")
-          .setCustomId("dude-fold")
-          .setStyle("DANGER"),
-        new MessageButton()
-          .setLabel("Call")
-          .setCustomId("dude-call")
-          .setStyle("DANGER"),
-        new MessageButton()
-          .setLabel("Raise")
-          .setCustomId("dude-raise")
-          .setStyle("DANGER")
-      ];
-      this.channel.send({
-        embeds: [embed],
-        components: [new MessageActionRow().setComponents(buttons)]
-      }).then(async (msg) => {
-        let interaction = await msg.awaitMessageComponent({ filter, time: 10 * 1000 });
-        let option = interaction.customId.split("-")[1];
-
-        switch (option) {
-          case "fold":
-            this.players.splice(j1, 1);
-            if (j1 === this.players.length) {
-              j1 = 0;
-            }
-            if (j1 <= this.dealer) {
-              this.dealer--;
-              if (this.dealer === -1) {
-                this.dealer = this.players.length - 1;
-              }
-            }
-            else if (j1 < this.players.length - 1) {
-              j1++;
-            }
-            else {
-              j1 = 0;
-            }
-            i1++;
-            break;
-          case "call":
-            if (p.bank >= this.minb) {
-              this.pot += this.minb - p.inPot;
-              p.bank -= this.minb - p.inPot;
-              p.inPot += this.minb - p.inPot;
-            }
-            else{
-              
-            }
-            break
-          case "raise":
-            break;
+      for (let i = 0; i < this.players.length; i++) {
+        this.players[i].hand = [];
+        this.players[i].deal(5, this.deck.deck);
+      }
+      let checkhand = new CustomEmbed()
+        .setColor("FUCHSIA")
+        .setDescription("Use /hand to check your hand at any time")
+      await this.channel.send({ embeds: [checkhand] })
+      let i1 = 0;
+      let j1 = this.dealer + 3;
+      if (this.players.length === 2) {
+        if(this.dealer === 0){
+          j1 = 0
         }
+        else{
+          j1 = 1;
+        }
+      }
+      if (j1 >= this.players.length) j1 = 0 + j1 - this.players.length;
+      let p;
+      let l = this.players.length
+      while (i1 < l) {
+        p = this.players[j1];
+        let filter = i => i.user.id === this.players[this.pos].id;
+        let embed = new CustomEmbed()
+          .setDescription("Press button to do shit")
+        let buttons = [
+          new MessageButton()
+            .setLabel("Fold")
+            .setCustomId("dude-fold")
+            .setStyle("DANGER"),
+          new MessageButton()
+            .setLabel("Call")
+            .setCustomId("dude-call")
+            .setStyle("SUCCESS"),
+          new MessageButton()
+            .setLabel("Raise")
+            .setCustomId("dude-raise")
+            .setStyle("PRIMARY")
+        ];
+        this.channel.send({
+          embeds: [embed],
+          components: [new MessageActionRow().setComponents(buttons)]
+        }).then(async (msg) => {
+          let interaction = await msg.awaitMessageComponent({ filter, time: 10 * 1000 });
+          let option = interaction.customId.split("-")[1];
 
-      })
+          switch (option) {
+            case "fold":
+              this.players.splice(j1, 1);
+              if (j1 === this.players.length) {
+                j1 = 0;
+              }
+              if (j1 <= this.dealer) {
+                this.dealer--;
+                if (this.dealer === -1) {
+                  this.dealer = this.players.length - 1;
+                }
+              }
+              else if (j1 < this.players.length - 1) {
+                j1++;
+              }
+              else {
+                j1 = 0;
+              }
+              i1++;
+              break;
+            case "call":
+              if (p.bank >= this.minb) {
+                this.pot += this.minb - p.inPot;
+                p.bank -= this.minb - p.inPot;
+                p.inPot += this.minb - p.inPot;
+              }
+              else {
+
+              }
+              break
+            case "raise":
+              break;
+          }
+
+        })
+      }
       this.draws = draws;
       this.subrounds = subrounds;
       for (let i = 0; i < this.subrounds; i++) {
         if (this.players.length < 2) i = this.subrounds;
         this.subroundRun();
       }
-      this.winners = this.winFind()
-      this.payout = this.pot / this.winners.length;
-      for (let i = 0; i < this.winners.length; i++) {
-        this.winners[i].bank += payout;
-      }
-
-
-    }
+      // this.winners = this.winFind()
+      // this.payout = this.pot / this.winners.length;
+      // for (let i = 0; i < this.winners.length; i++) {
+      // 	this.winners[i].bank += payout;
+      // }	  
+    })()
 
   }
 
@@ -309,7 +346,6 @@ class Round {
     while (i2 < this.players.length) {
       p = this.players[j2];
       //use input in trade hands funcion of player
-      //sort hand array
       //send embed with buttons to trade specific cards
       if (j2 < this.players.length - 1) {
         j2++;
@@ -559,13 +595,6 @@ class Deck {
   }
 }
 
-class SubRound {
-  constructor(players) {
-    this.dealer;
-    this.players = players;
-  }
-}
-
 class Highest {
   constructor(type, highCard, combo1, combo2) {
     this.type = type;
@@ -701,4 +730,4 @@ class Checker {
   }
 }
 
-module.exports = { allGames, Card, Player, Game, SubRound, Highest, Checker }
+module.exports = { allGames, Card, Player, Game, Highest, Checker }
