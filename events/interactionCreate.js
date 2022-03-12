@@ -2,7 +2,9 @@ const { allGames } = require("#poker");
 const { CustomEmbed } = require("#structures");
 const mergeImg = require("merge-img");
 const path = require("path")
+
 module.exports = async (bot, interaction) => {
+	console.log("fired")
 	if (!interaction.inGuild()) return;
 	if (interaction.isCommand()) {
 		let { commandName } = interaction
