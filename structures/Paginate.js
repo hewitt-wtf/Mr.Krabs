@@ -14,9 +14,9 @@ class Paginate {
         this.message = message;
         this.embeds = embeds;
         this.member = member;
-        for (let i = 1; i < this.embeds.length; i++) {
-            this.embeds[i].setColor(embeds[0].color);
-        }
+        // for (let i = 1; i < this.embeds.length; i++) {
+        //     this.embeds[i].setColor(embeds[0].color);
+        // }
         this.createCollector();
     }
 

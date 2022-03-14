@@ -5,6 +5,7 @@ const { allGames, Game } = require("#poker")
 
 module.exports = {
     name: "new-game",
+    aliases: ["game"],
     description: "Start A new Poker game",
     minArgs: 2,
     usage: "<start> <increment>",
@@ -63,7 +64,7 @@ module.exports = {
         })
 
         collector.on('end', collected => {
-            if (players.size >= 1) {
+            if (players.size > 1) {
                 msg.edit({
                     components: [],
                 })

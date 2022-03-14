@@ -17,11 +17,13 @@ module.exports = {
 					iconURL: bot.user.displayAvatarURL()
 				}).addFields(
 					chunk.map((c) => {
+            if(c.slash) prefix = "/";
+            else prefix = bot.prefix;
 						return {
 							name: formatString(c.name),
 							value: [
-								c.aliases ? `Aliases: ${c.aliases.map((a) => `\`${a}\``).join(", ")}` : "No Aliases",
-								`Usage: \`${bot.prefix}${c.name}${c.minArgs ? ` ${c.usage}` : ""}\``,
+								c.aliases ? `Aliases: ${c.aliases.map((a) => `\`!${a}\``).join(", ")}` : "No Aliases",
+								`Usage: \`${prefix}${c.name}${c.minArgs ? ` ${c.usage}` : ""}\``,
 								c.description ?? "No Description"
                 ].join("\n"),
 							inline: false

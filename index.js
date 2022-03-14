@@ -13,7 +13,7 @@ bot.loadCommands(path.join(__dirname, "commands"))
 bot.loadEvents(path.join(__dirname, "events"))
 bot.login()
 
-process.on("uncaughtException", (e, o) => log(`${e} ${o}`, "error"))
+process.on("uncaughtException", (e, o) => log(`${e} ${e.trace}`, "error"))
 
 bot.on("ready", () => {
 
