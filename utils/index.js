@@ -1,6 +1,6 @@
-const fs = require("fs")
+const fs = require("fs");
 const path = require("path");
-const chalk = require("chalk")
+const chalk = require("chalk");
 
 const getFiles = (dir) => {
     const files = fs.readdirSync(dir, {
@@ -24,30 +24,30 @@ const getFiles = (dir) => {
 };
 
 const formatString = (string) => {
-    let spl = string.split(" ")
+    let spl = string.split(" ");
     for (let i = 0; i < spl.length; i++) {
         let temp = spl[i].charAt(0).toUpperCase() + spl[i].slice(1).toLowerCase();
         spl[i] = temp;
     }
     return spl.join(" ");
-}
+};
 
 const log = (content, type) => {
-    let text = ""
+    let text = "";
     switch (type.toLowerCase()) {
         case "ready":
-            text += chalk.magenta(`[${type.toUpperCase()}]`)
-            break
+            text += chalk.magenta(`[${type.toUpperCase()}]`);
+            break;
         case "error":
-            text += chalk.red(`[${type.toUpperCase()}]`)
-            break
+            text += chalk.red(`[${type.toUpperCase()}]`);
+            break;
         default:
-            text += chalk.cyan(`[INFO]`)
+            text += chalk.cyan(`[INFO]`);
 
     }
     text += ` ${content}`;
-    console.log(text)
-}
+    console.log(text);
+};
 
 const chunk = (array, amount = 5) => {
     const chunked = [];
@@ -57,6 +57,6 @@ const chunk = (array, amount = 5) => {
         index += amount;
     }
     return chunked;
-}
+};
 
-module.exports = { getFiles, formatString, log, chunk }
+module.exports = { getFiles, formatString, log, chunk };

@@ -22,7 +22,6 @@ module.exports = {
                     .setTitle("Your Cards")
                     .setDescription(hand.map((c) => c.name).join(", "))
                     .setImage("attachment://hand.png");
-                console.log(hand.map((c) => c.img))
                 let img = await mergeImg(
                     hand.map((c) => c.img)
                 );
@@ -33,7 +32,7 @@ module.exports = {
                             new MessageAttachment(buffer, "hand.png")
                         ]
                     });
-                })
+                });
             } else {
                 interaction.editReply({ content: "No game?" });
             }

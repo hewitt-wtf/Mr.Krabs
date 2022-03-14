@@ -32,13 +32,13 @@ class Paginate {
             new MessageButton()
                 .setCustomId("right")
                 .setLabel("❯")
-                .setStyle("PRIMARY"),
+                .setStyle("PRIMARY")
         ];
         let msg = await message.channel.send({
             embeds: [embeds[0].setFooter({
                 text: `Page 1/${embeds.length}`
             })],
-            components: [new MessageActionRow().addComponents(buttons)],
+            components: [new MessageActionRow().addComponents(buttons)]
         });
         const collector = msg.createMessageComponentCollector({
             idle: 1000 * 30,
@@ -52,7 +52,7 @@ class Paginate {
             if (message.author.id != member.id) {
                 i.reply({
                     content: `This is locked to ${member.displayName}`,
-                    ephemeral: true,
+                    ephemeral: true
                 });
                 return;
             }
@@ -73,7 +73,7 @@ class Paginate {
                     embeds: [embeds[page].setFooter({
                         text: `Page ${page + 1}/${embeds.length}`
                     })],
-                    components: [new MessageActionRow().addComponents(buttons)],
+                    components: [new MessageActionRow().addComponents(buttons)]
                 });
             } else if (i.customId == "left") {
                 --page;
@@ -93,7 +93,7 @@ class Paginate {
                     embeds: [embeds[page].setFooter({
                         text: `Page ${page + 1}/${embeds.length}`
                     })],
-                    components: [new MessageActionRow().addComponents(buttons)],
+                    components: [new MessageActionRow().addComponents(buttons)]
                 });
             }
         });
@@ -103,8 +103,8 @@ class Paginate {
                 components: [
                     new MessageActionRow().addComponents(
                         buttons.map((b) => b.setStyle("SECONDARY").setDisabled(true))
-                    ),
-                ],
+                    )
+                ]
             });
         });
     }

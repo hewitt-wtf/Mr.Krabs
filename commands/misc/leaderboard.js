@@ -1,6 +1,6 @@
 const { CustomEmbed } = require("#structures");
 
-const medals = ["🥇", "🥈", "🥉"]
+const medals = ["🥇", "🥈", "🥉"];
 module.exports = {
     name: "leaderboard",
     aliases: ["lb"],
@@ -9,10 +9,10 @@ module.exports = {
         message.delete();
         let leaderboard = [...bot.db.users.sort((a, b) => b.wins - a.wins).values()];
 
-        let description = []
+        let description = [];
         for (let i = 0; i < Math.min(leaderboard.length, 10); i++) {
             let user = leaderboard[i];
-            description.push(`${medals[i] ?? `${i}`}: ${(await bot.users.fetch(user.userId)).tag}`)
+            description.push(`${medals[i] ?? `${i}`}: ${(await bot.users.fetch(user.userId)).tag}`);
         }
 
         if (description.length == 0) {
@@ -20,8 +20,8 @@ module.exports = {
         } else {
             let embed = new CustomEmbed()
                 .setTitle("Top 10 Poker Players")
-                .setDescription(description.join("\n"))
-            send(embed)
+                .setDescription(description.join("\n"));
+            send(embed);
         }
     }
-}
+};

@@ -118,7 +118,6 @@ class Game {
     this.channel.send({
       embeds: [this.startEmbed]
     });
-    console.log("sus");
 
     this.roundRun();
 
@@ -152,7 +151,6 @@ class Game {
     });
 
     let i = await drawMsg.awaitMessageComponent({ filter, time: 60000 });
-    console.log(i.customId);
     let draw = i.customId === "zero" ? 0 : Number(i.customId.charAt(0));
     await i.reply({
       content: `You selected: \`${draw}\``,
@@ -180,7 +178,6 @@ class Game {
 
       let i2 = await drawMsg2.awaitMessageComponent({ filter: filter2, time: 60000 });
       let draw2 = i2.customId.charAt(0);
-      console.log(draw2);
       await i2.reply({
         content: `You selected: \`${draw2}\``,
         ephemeral: true
