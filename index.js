@@ -29,15 +29,15 @@ bot.on("ready", () => {
 
 })
 
-const webhookListener = require("#structures")
-async function onDonation(
-   paymentSource,
-   paymentId,
-   timestamp,
-   amount,
-   senderName,
-   message,
-) {
-   bot.db.addBalance(message, amount * 50_000)
-}
-webhookListener.on('donation', onDonation);
+// const webhookListener = require("#structures")
+// async function onDonation(
+//    paymentSource,
+//    paymentId,
+//    timestamp,
+//    amount,
+//    senderName,
+//    message,
+// ) {
+//    bot.db.addBalance(message, amount * 50_000)
+// }
+// webhookListener.on('donation', onDonation);

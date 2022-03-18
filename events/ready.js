@@ -58,6 +58,6 @@ module.exports = (bot) => {
 		guild.commands.set(bot.commands.filter((c) => c.slash).map((c) => c));
 	}
 
-	bot.db.connect();
+	// bot.db.connect();
 	new CronJob("*/30 * * * * *", setActivity, null, true).start();
 };

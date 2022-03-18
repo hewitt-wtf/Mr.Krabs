@@ -1,7 +1,7 @@
 const { Client, Collection } = require("discord.js");
 const { getFiles, log } = require("#utils");
 const path = require("path");
-const DB = require("./DB");
+// const DB = require("./DB");
 
 class KrabsClient extends Client {
     constructor({ token, prefix }) {
@@ -17,7 +17,7 @@ class KrabsClient extends Client {
         this.commands = new Collection();
         this.token = token;
         this.prefix = prefix;
-        this.db = new DB(this);
+        // this.db = new DB(this);
     }
 
     loadCommands(dir) {
