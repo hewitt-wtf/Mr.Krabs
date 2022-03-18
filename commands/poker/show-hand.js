@@ -34,7 +34,7 @@ module.exports = {
                     });
                 });
             } else {
-                interaction.editReply({ content: "No game?" });
+                interaction.editReply({ content: "https://i.kym-cdn.com/entries/icons/original/000/039/393/cover2.jpg" });
             }
         }
     }

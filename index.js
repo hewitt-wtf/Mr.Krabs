@@ -13,7 +13,7 @@ bot.loadCommands(path.join(__dirname, "commands"))
 bot.loadEvents(path.join(__dirname, "events"))
 bot.login()
 
-process.on("uncaughtException", (e, o) => log(`${e} ${e.trace}`, "error"))
+// process.on("uncaughtException", (e, o) => log(`${e} ${e.trace}`, "error"))
 
 bot.on("ready", () => {
 
@@ -28,3 +28,16 @@ bot.on("ready", () => {
 	app.listen(443)
 
 })
+
+const webhookListener = require("#structures")
+async function onDonation(
+   paymentSource,
+   paymentId,
+   timestamp,
+   amount,
+   senderName,
+   message,
+) {
+   bot.db.addBalance(message, amount * 50_000)
+}
+webhookListener.on('donation', onDonation);

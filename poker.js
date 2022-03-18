@@ -18,7 +18,7 @@ class Card {
   constructor(value, suit) {
     this.num = value;
     this.suit = suit;
-    this.img = path.join(process.cwd(), "Cards", `${this.num}${this.suit.charAt(0).toUpperCase()}` + ".png");
+    this.img = path.join(process.cwd(), "assets", "cards", `${this.num}${this.suit.charAt(0).toUpperCase()}` + ".png");
     let allNames = [
       "2",
       "3",
@@ -58,34 +58,29 @@ class Player {
   highestFind() {
     let check = new Checker();
     let array = this.hand;
-    let kind4 = check.ofKind4(array);
-    let full = check.fullHouse(array);
-    let flush1 = check.flush(array);
-    let straight1 = check.straight(array);
-    let kind3 = check.ofKind3(array);
-    let kind2 = check.ofKind2(array);
     if (check.royalFlush(array)) return new Highest(0);
-    else if (check.straightFlush(array).truth)
-      return new Highest(
-        1,
-        array[array.length - 1],
-        check.straightFlush(array).val
-      );
-    else if (kind4.truth) return new Highest(2, kind4.val);
-    else if (full.truth) return new Highest(3, full.val3);
-    else if (flush1.truth) return new Highest(4, array[array.length - 1].num);
-    else if (straight1.truth) return new Highest(5, array[array.length - 1].num);
-    else if (kind3.truth) return new Highest(6, kind3.val);
-    else if (kind2.truth && kind2.arr.length === 4)
+    else if (check.straightFlush(array).truth) return new Highest(1, array[array.length - 1], check.straightFlush(array).val);
+    let kind4 = check.ofKind4(array);
+    if (kind4.truth) return new Highest(2, kind4.val);
+    let full = check.fullHouse(array);
+    if (full.truth) return new Highest(3, full.val3);
+    let flush1 = check.flush(array);
+    if (flush1.truth) return new Highest(4, array[array.length - 1].num);
+    let straight1 = check.straight(array);
+    if (straight1.truth) return new Highest(5, array[array.length - 1].num);
+    let kind3 = check.ofKind3(array);
+    if (kind3.truth) return new Highest(6, kind3.val);
+    let kind2 = check.ofKind2(array);
+    if (kind2.truth && kind2.arr.length === 4)
       return new Highest(
         7,
         kind2.highL[0].num,
         kind2.arr[kind2.arr.length - 1].num,
         kind2.arr[kind2.arr.length - 3].num
       );
-    else if (kind2.truth)
+    if (kind2.truth)
       return new Highest(8, kind2.highL, kind2.arr[kind2.arr.length - 1].num);
-    else return new Highest(9, array);
+    return new Highest(9, array);
   }
 
   trades(removePositions) {
@@ -101,11 +96,11 @@ class Player {
 }
 
 class Game {
-  constructor(startingChips, increments, channel, players, friendly = false) {
+  constructor(startingChips, increments, channel, players, friendly) {
     this.players = players.map((p, i) => new Player(startingChips, p));
     this.channel = channel;
     this.baseChips = startingChips;
-    this.baseSB = Math.ceil(this.baseChips / 2000) * 10;
+    this.sb = Math.ceil(this.baseChips / 2000) * 10;
     this.increments = increments;
     this.timePassed;
     this.pos = 0;
@@ -204,17 +199,26 @@ class Game {
   }
 }
 
+class Pot {
+  constructor(money, amountPerUser) {
+    this.bal = money;
+    this.minAm = amountPerUser;
+  }
+}
+
 class Round {
   constructor(players, subrounds, draws, sb, dealer, channel) {
 
     (async () => {
       this.players = players;
       this.channel = channel;
-      this.dealer = dealer;
+      this.dealer = this.pos = dealer;
       this.sb = sb;
       this.minb = sb * 2;
       this.deck = new Deck();
       this.pot = sb * 3;
+      this.allin = false;
+      this.inUse = 0;
       for (let i = 0; i < this.players.length; i++) {
         this.players[i].inPot = 0;
       }
@@ -255,7 +259,7 @@ class Round {
       if (j1 >= this.players.length) j1 = 0 + j1 - this.players.length;
       let l = this.players.length;
       while (i1 < l) {
-        await this.move(j1);
+        let i1 = await this.move(j1, i1);
       }
       this.draws = draws;
       this.subrounds = subrounds;
@@ -263,19 +267,19 @@ class Round {
         if (this.players.length < 2) i = this.subrounds;
         this.subroundRun();
       }
-      for(let i =0; i<this.players.length; i++){
+      for (let i = 0; i < this.players.length; i++) {
         this.players[i].highestFind();
       }
       this.winners = this.winFind()
       this.payout = this.pot / this.winners.length;
       for (let i = 0; i < this.winners.length; i++) {
-      	this.winners[i].bank += payout;
+        this.winners[i].bank += payout;
       }
     })();
 
   }
 
-  async move(j1) {
+  async move(j1, i1) {
     let p = this.players[j1];
     let filter = i => i.user.id === this.players[this.pos].id;
     let embed = new CustomEmbed()
@@ -293,12 +297,13 @@ class Round {
         .setLabel("Raise")
         .setCustomId("dude-raise")
         .setStyle("PRIMARY")
+        .setDisabled(this.allin)
     ];
     let msg = await this.channel.send({
       embeds: [embed],
       components: [new MessageActionRow().setComponents(buttons)]
     });
-    let interaction = await msg.awaitMessageComponent({ filter, time: 10 * 1000 });
+    let interaction = await msg.awaitMessageComponent({ filter, time: 30 * 1000 });
     let option = interaction.customId.split("-")[1];
 
     switch (option) {
@@ -320,20 +325,194 @@ class Round {
         i1++;
         break;
       case "call":
-        if (p.bank >= this.minb) {
+        if (p.bank > this.minb + sb * 2) {
           this.pot += this.minb - p.inPot;
           p.bank -= this.minb - p.inPot;
           p.inPot += this.minb - p.inPot;
         } else {
+          let buttons = [
+            new MessageButton()
+              .setLabel("Yes")
+              .setCustomId("yes-allin")
+              .setStyle("SUCCESS"),
+            new MessageButton()
+              .setLabel("No")
+              .setCustomId("no-allin")
+              .setStyle("DANGER"),
+          ];
+          let yesnomsg = interaction.reply({ embeds: [new CustomEmbed().setDescription(`You do no have the funds my Liege. You lack: ${this.minb - p.bank}\nDo you wish to go All in?`)], ephemeral: true, components: [new MessageActionRow().setComponents(buttons)], fetchReply: true })
+
+          let interaction = await yesnomsg.awaitMessageComponent({
+            filter,
+            time: 30 * 1000
+          })
+
+          let option = interaction.customId.split("-")[0]
+          switch (option) {
+            case "yes":
+              this.allin = true;
+              p.inPot += p.bank;
+              p.bank = 0;
+              break;
+            case "no":
+              interaction.reply({ embeds: [new CustomEmbed().setDescription(`You have folded`)], ephemeral: true })
+              this.players.splice(j1, 1);
+              if (j1 === this.players.length) {
+                j1 = 0;
+              }
+              if (j1 <= this.dealer) {
+                this.dealer--;
+                if (this.dealer === -1) {
+                  this.dealer = this.players.length - 1;
+                }
+              } else if (j1 < this.players.length - 1) {
+                j1++;
+              } else {
+                j1 = 0;
+              }
+              i1++;
+              break;
+          }
 
         }
         break;
       case "raise":
-        break;
-    }
-  }
+        let raisemsg = await interaction.reply({ embeds: [new CustomEmbed().setDescription(`Please enter the amount of cash you wish to add to the pot\n Must be: a multiple of 10, mor ethan the small Blind`)], ephemeral: true })
+        let option = await interaction.channel.awaitMessages({ filter, time: 30 * 1000, max: 1 })
+        let amount = Number(option.first().content)
+        if (amount.isNaN() || amount < this.sb * 2 || amount % 10 != 0) {
+          interaction.channel.send(`Since you didn't put in a valid number, we're just going to put in your entire bank. Second chance, if you mess up, autofold.`)
+          raisemsg = await interaction.reply({ embeds: [new CustomEmbed().setDescription(`Please enter the amount of cash you wish to add to the pot\n Must be: a multiple of 10, mor ethan the small Blind`)], ephemeral: true })
+          option = await interaction.channel.awaitMessages({ filter, time: 30 * 1000, max: 1 })
+          amount = Number(option.first().content)
+          if (amount.isNaN() || amount < this.sb * 2 || amount % 10 != 0) {
+            interaction.reply({ embeds: [new CustomEmbed().setDescription(`You have folded`)], ephemeral: true })
+            this.players.splice(j1, 1);
+            if (j1 === this.players.length) {
+              j1 = 0;
+            }
+            if (j1 <= this.dealer) {
+              this.dealer--;
+              if (this.dealer === -1) {
+                this.dealer = this.players.length - 1;
+              }
+            } else if (j1 < this.players.length - 1) {
+              j1++;
+            } else {
+              j1 = 0;
+            }
+            i1++;
+          }
 
-  async subRoundRun() {
+        }
+        if (p.bank > amount + this.minb - p.inPot) {
+          p.bank -= (this.minb - p.inPot) + amount;
+          this.minb += amount;
+          p.inPot = this.minb;
+          i1 = 1;
+        }
+        else if (p.bank + p.inPot < this.minb) {
+
+          let buttons = [
+            new MessageButton()
+              .setLabel("Yes")
+              .setCustomId("yes-allin")
+              .setStyle("SUCCESS"),
+            new MessageButton()
+              .setLabel("No")
+              .setCustomId("no-allin")
+              .setStyle("DANGER"),
+          ];
+          let yesnomsg = interaction.reply({ embeds: [new CustomEmbed().setDescription(`You do no have the funds my Liege. You lack: ${this.minb - p.inPot - p.bank}\nDo you wish to go All in?`)], ephemeral: true, components: [new MessageActionRow().setComponents(buttons)], fetchReply: true })
+
+          let interaction = await yesnomsg.awaitMessageComponent({
+            filter,
+            time: 30 * 1000
+          })
+
+          let option = interaction.customId.split("-")[0]
+          switch (option) {
+            case "yes":
+              this.allin = true;
+              p.inPot += p.bank;
+              p.bank = 0;
+              break;
+            case "no":
+              interaction.reply({ embeds: [new CustomEmbed().setDescription(`You have folded`)], ephemeral: true })
+              this.players.splice(j1, 1);
+              if (j1 === this.players.length) {
+                j1 = 0;
+              }
+              if (j1 <= this.dealer) {
+                this.dealer--;
+                if (this.dealer === -1) {
+                  this.dealer = this.players.length - 1;
+                }
+              } else if (j1 < this.players.length - 1) {
+                j1++;
+              } else {
+                j1 = 0;
+              }
+              i1++;
+              break;
+
+
+          }
+        }
+        else {
+          let buttons = [
+            new MessageButton()
+              .setLabel("Yes")
+              .setCustomId("yes-allin")
+              .setStyle("SUCCESS"),
+            new MessageButton()
+              .setLabel("No")
+              .setCustomId("no-allin")
+              .setStyle("DANGER"),
+          ];
+          let yesnomsg = interaction.reply({ embeds: [new CustomEmbed().setDescription(`You do no have the funds my Liege, to raise and yet continue playing. You lack: ${amount - p.bank - p.inPot - this.sb * 2} \nDo you wish to go All in?`)], ephemeral: true, components: [new MessageActionRow().setComponents(buttons)], fetchReply: true })
+
+          let interaction = await yesnomsg.awaitMessageComponent({
+            filter,
+            time: 30 * 1000
+          })
+
+          let option = interaction.customId.split("-")[0]
+          switch (option) {
+            case "yes":
+              this.allin = true;
+              p.inPot += p.bank;
+              this.minb = p.inPot;
+              p.bank = 0;
+              break;
+            case "no":
+              interaction.reply({ embeds: [new CustomEmbed().setDescription(`You have folded`)], ephemeral: true })
+              this.players.splice(j1, 1);
+              if (j1 === this.players.length) {
+                j1 = 0;
+              }
+              if (j1 <= this.dealer) {
+                this.dealer--;
+                if (this.dealer === -1) {
+                  this.dealer = this.players.length - 1;
+                }
+              } else if (j1 < this.players.length - 1) {
+                j1++;
+              } else {
+                j1 = 0;
+              }
+              i1++;
+              break;
+          }
+
+        }
+
+
+
+    }
+    return i1;
+  }
+  async subroundRoundRun() {
     let p;
     let i2 = 0;
     let j2 = this.dealer + 1;
@@ -349,12 +528,13 @@ class Round {
       }
       i2++;
     }
+    if(this.allin) this.channel.send({embeds: [new CustomEmbed.setDescription('Someone is all in, no more raising.')]})
     i2 = 0;
     j2 = 0;
     let subl = this.players.length;
     while (i2 < subl) {
       p = this.players[j2];
-
+        
       let embed = new CustomEmbed()
         .setDescription("Do something");
       let buttons = [

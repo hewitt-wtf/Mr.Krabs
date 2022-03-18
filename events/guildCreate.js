@@ -1,6 +1,6 @@
 const { log } = require("#utils");
 
-module.exports = async (bot, guild) => {
+module.exports = async (_, guild) => {
     try {
         await guild.roles.create({
             name: "Poker",
